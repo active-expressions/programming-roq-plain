@@ -1,6 +1,7 @@
 import View from './view.js';
 import { pushIfMissing, removeIfExisting, Stack, isPrimitive, identity } from './utils.js';
 import trigger from 'aexpr-trigger';
+import aexpr from 'aexpr-interpretation';
 
 /*
     cop.create('SelectionLayer')
@@ -159,7 +160,7 @@ import trigger from 'aexpr-trigger';
             this.onNewInstance(item);
         }
         onNewInstance(item) {
-            trigger(aexpr(this.expression, item))
+            trigger(aexpr(this.expression, this.expression.varMapping, item))
                 .onBecomeTrue(() => this.add(item))
                 .onBecomeFalse(() => this.remove(item));
         }

@@ -3,6 +3,7 @@
     //"stage-0"
   ],
   "plugins": [
-    "aexpr-source-transformation"
+    //"aexpr-source-transformation"
+    "locals"
   ]
 }
