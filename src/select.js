@@ -1,127 +1,6 @@
 import View from './view.js';
 import { pushIfMissing, removeIfExisting, Stack, isPrimitive, identity } from './utils.js';
-import trigger from 'aexpr-trigger';
-import aexpr from 'aexpr-interpretation';
-
-/*
-    cop.create('SelectionLayer')
-        .refineObject(users.timfelgentreff.jsinterpreter, {
-            get InterpreterVisitor() {
-                return SelectionInterpreterVisitor;
-            }
-        });
-
-    var PROPERTY_ACCESSOR_NAME = 'wrappedValue';
-    var PropertyAccessor = Object.subclass('whjfqggkewgdkewgfiuewgfeldigdk3v3m', {
-        constructor: function(obj, propName) {
-            this.selectionItems = new Set();
-
-            this.safeOldAccessors(obj, propName);
-
-            try {
-                obj.__defineGetter__(propName, function() {
-                    return this[PROPERTY_ACCESSOR_NAME];
-                }.bind(this));
-            } catch (e) { /* Firefox raises for Array.length *//* }
-            var newGetter = obj.__lookupGetter__(propName);
-            if (!newGetter) {
-                // Chrome silently ignores __defineGetter__ for Array.length
-                this.externalVariables(solver, null);
-                return;
-            }
-
-            obj.__defineSetter__(propName, function(newValue) {
-                var returnValue = this[PROPERTY_ACCESSOR_NAME] = newValue;
-                console.log('newValue for', obj, propName, newValue);
-                if(!isPrimitive(newValue)) {
-                    this.recalculate();
-                }
-                this.applyCallbacks();
-                return returnValue;
-            }.bind(this));
-        },
-
-        safeOldAccessors: function(obj, propName) {
-            // take existing getter, if existent, and assign to
-            var existingSetter = obj.__lookupSetter__(propName),
-                existingGetter = obj.__lookupGetter__(propName);
-            if (existingGetter && existingSetter) {
-                this.__defineGetter__(PROPERTY_ACCESSOR_NAME, existingGetter);
-                this.__defineSetter__(PROPERTY_ACCESSOR_NAME, existingSetter);
-            }
-
-            // assign old value to new slot
-            if (!existingGetter &&
-                !existingSetter &&
-                obj.hasOwnProperty(propName)
-            ) {
-                this[PROPERTY_ACCESSOR_NAME] = obj[propName];
-            }
-        },
-
-        addCallback: function(selectionItem) {
-            this.selectionItems.add(selectionItem);
-            selectionItem.propertyAccessors.add(this);
-        },
-        applyCallbacks: function() {
-            this.selectionItems.forEach(function(selectionItem) {
-                selectionItem.callback();
-            });
-        },
-        recalculate: function() {
-            console.log('should recalculate');
-
-            var selectionItems = [];
-            this.selectionItems.forEach(function(selectionItem) {
-                selectionItems.push(selectionItem);
-            });
-
-            selectionItems.forEach(function(selectionItem) {
-                selectionItem.removeListeners();
-            });
-            selectionItems.forEach(function(selectionItem) {
-                selectionItem.installListeners();
-            });
-        }
-    });
-
-    PropertyAccessor.accessors = new Map();
-    PropertyAccessor.wrapProperties = function(obj, propName) {
-        var mapObj;
-        if(PropertyAccessor.accessors.has(obj)) {
-            mapObj = PropertyAccessor.accessors.get(obj);
-        } else {
-            mapObj = {};
-            PropertyAccessor.accessors.set(obj, mapObj);
-        }
-
-        if(!mapObj.hasOwnProperty(propName)) {
-            mapObj[propName] = new PropertyAccessor(obj, propName);
-        }
-
-        return mapObj[propName];
-    };
-
-    users.timfelgentreff.jsinterpreter.InterpreterVisitor.subclass('SelectionInterpreterVisitor', {
-
-        visitGetSlot: function($super, node) {
-
-            var obj = this.visit(node.obj),
-                propName = this.visit(node.slotName);
-
-            PropertyAccessor
-                .wrapProperties(obj, propName)
-                .addCallback(View.current());
-
-            return $super(node);
-        },
-
-        shouldInterpret: function(frame, fn) {
-            if (this.isNative(fn)) return false;
-            return typeof(fn.forInterpretation) == 'function';
-        }
-    });
- */
+import { ExpressionObserver } from './interpretation/interpretation-active-expressions.js';
 
     class Operator {}
     class IdentityOperator extends Operator {
@@ -157,25 +36,32 @@ import aexpr from 'aexpr-interpretation';
             }, this);
         }
         newItemFromUpstream(item) {
-            this.onNewInstance(item);
+            this.onNewInstance(item, this.expression.varMapping);
         }
-        onNewInstance(item) {
-            trigger(aexpr(this.expression, this.expression.varMapping, item))
-                .onBecomeTrue(() => this.add(item))
-                .onBecomeFalse(() => this.remove(item));
+        onNewInstance(item, context) {
+            new ExpressionObserver(
+                this.expression,
+                context,
+                item,
+                () => this.conditionChanged(item)
+            );
+
+            if(this.expression(item)) {
+                this.add(item);
+            }
+        }
+        conditionChanged(item) {
+            if(this.expression(item))
+                this.add(item);
+            else
+                this.remove(item);
         }
         add(item) {
             if(this.upstream.now().indexOf(item) >= 0) {
-                this.addDueToFilterExpression(item);
+                this.downstream.safeAdd(item);
             }
         }
         remove(item) {
-            this.removeDueToFilterExpression(item);
-        }
-        addDueToFilterExpression(item) {
-            this.downstream.safeAdd(item);
-        }
-        removeDueToFilterExpression(item) {
             this.downstream.safeRemove(item);
         }
         destroyItemFromUpstream(item) {
