@@ -17,7 +17,7 @@ describe('.reduce operator', function() {
         var instance1 = new AValueClass(42);
         var baseView = select(AValueClass, function(data) {
             return data.value > threshold.min;
-        }).reduce(function(aggregation) {
+        }, locals).reduce(function(aggregation) {
             timesCalled++;
             currentValue = aggregation;
         }, function(acc, instance) {
