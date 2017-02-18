@@ -409,14 +409,12 @@ import { ExpressionObserver } from './interpretation/interpretation-active-expre
     /**
      * @function select
      * @param {Class} Class
-     * @param {predicate} predicate
+     * @param {predicate} expression
      * @return {View}
      */
-    export default function select(Class, predicate, context) {
-        var newSelection = new View();
-
-        new FilterOperator(Class.__livingSet__, newSelection, predicate, context);
-
+    export default function select(Class, expression, context) {
+        let newSelection = new View();
+        new FilterOperator(Class._instances_, newSelection, expression, context);
         return newSelection;
     }
 
