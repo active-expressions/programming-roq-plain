@@ -8,14 +8,12 @@ export class PropertyAccessor {
             obj.__defineGetter__(propName, () => this[PROPERTY_ACCESSOR_NAME]);
         } catch (e) { /* Firefox raises for Array.length */ }
         let newGetter = obj.__lookupGetter__(propName);
-        if (!newGetter) {
-            // Chrome silently ignores __defineGetter__ for Array.length
+        if (!newGetter) { // Chrome silently ignores __defineGetter__ for Array.length
             return;
         }
 
         obj.__defineSetter__(propName, newValue => {
             let returnValue = this[PROPERTY_ACCESSOR_NAME] = newValue;
-            //console.log('newValue for', obj, propName, newValue);
             this.setPropertyWith(newValue);
             return returnValue;
         });
